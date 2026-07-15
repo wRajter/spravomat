@@ -1,0 +1,52 @@
+# spravomat/db/migrations/__init__.py
+
+"""
+Schema definition and idempotent initialization.
+
+For v1 the schema is a single table created with CREATE ... IF NOT EXISTS and
+re-run on each release (Heroku `release` phase). No versioned migration history
+yet — that is added later, when the first real schema change makes the
+idempotent approach awkward.
+"""
+
+import logging
+
+from spravomat.db.connection import connection
+
+logger = logging.getLogger(__name__)
+
+# The full schema. Idempotent: safe to run repeatedly.
+SCHEMA_DDL = """
+CREATE TABLE IF NOT EXISTS articles (
+    article_id   BIGSERIAL PRIMARY KEY,
+    title        TEXT        NOT NULL,
+    url          TEXT        NOT NULL UNIQUE,
+    medium       TEXT        NOT NULL,
+    category     TEXT,
+    published_at TIMESTAMPTZ,
+    fetched_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    summary      TEXT,
+    perex        TEXT,
+    image_url    TEXT,
+    attributes   JSONB       NOT NULL DEFAULT '{}'::jsonb
+);
+CREATE INDEX IF NOT EXISTS idx_articles_published_at ON articles (published_at);
+"""
+
+
+def init_schema() -> dict:
+    """
+    Create the schema idempotently.
+
+    Returns:
+        Standard dict; data is None (this is a side-effecting operation).
+    """
+    try:
+        with connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(SCHEMA_DDL)
+        logger.info("🏁 Schema initialized (articles table ready)")
+        return {"success": True, "message": "Schema initialized", "data": None}
+    except Exception as e:
+        logger.error(f"❌ Schema init failed: {e}")
+        return {"success": False, "message": str(e), "data": None}

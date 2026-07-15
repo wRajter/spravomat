@@ -1,0 +1,30 @@
+# Environment and secrets — CRITICAL, never commit
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Tests / tooling
+.pytest_cache/
+
+# Notebooks — research only, keep out of git
+notebooks/
+.ipynb_checkpoints/
+
+# Model cache (sentence-transformers downloads bge-m3 locally)
+.cache/
+models/
+
+# Grouping internal state, if ever written to disk locally
+*.pkl
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store

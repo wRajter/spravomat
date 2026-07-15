@@ -1,0 +1,39 @@
+[project]
+name = "spravomat"
+version = "0.1.0"
+description = "Slovak lateral-reading news aggregator"
+requires-python = ">=3.11"
+dependencies = [
+    # web
+    "flask>=3.0",
+    "gunicorn>=21.0",          # Heroku web process
+    # data acquisition
+    "feedparser>=6.0",
+    "beautifulsoup4>=4.12",
+    "requests>=2.31",
+    # grouping (clustering)
+    "sentence-transformers>=2.7",   # bge-m3; pulls in torch, memory-heavy
+    "scikit-learn>=1.4",
+    "numpy>=1.26",
+    "pandas>=2.2",
+    # db
+    "psycopg[binary]>=3.1",    # Postgres (psycopg 3)
+    # config
+    "python-dotenv>=1.0",
+    # LLM enrichment — provider PARKED, uncomment per choice:
+    # "openai>=1.30",
+    # "google-genai>=0.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "jupyter>=1.0",            # notebooks (research)
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["spravomat*"]
