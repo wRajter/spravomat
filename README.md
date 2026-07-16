@@ -25,7 +25,21 @@ cp .env.example .env   # then fill in values
 ```bash
 flask --app spravomat.web run     # web app
 python -m spravomat.db.migrations # create/update the database schema
-python -m spravomat.acquisition   # fetch + store articles (all sources)
+python -m spravomat.acquisition   # 1. fetch + store articles (all sources)
+python -m spravomat.grouping      # 2. cluster articles into stories
+python -m spravomat.presentation  # 3. rank stories into display-ready cards
+```
+
+## The pipeline
+
+Four data components run in order, each reading the previous one's output from
+the database and writing its own. The database is the only thing they share —
+no component imports another's internals.
+
+```
+acquisition ─► articles ─► grouping ─► article_clusters ─► presentation ─► story_cards ─► web
+  (RSS)                     (embed +                        (rank + build
+                             cluster)                        story cards)
 ```
 
 ## Data acquisition
@@ -127,3 +141,50 @@ Extra steps, only if needed:
   (fine — it's nullable).
 - **Feed is temporarily blocked** but you want to keep the spec → set
   `known_blocked=True` so an empty result logs calmly instead of as a warning.
+
+## Grouping
+
+Turns articles into stories: articles about the same event are clustered
+together. This is the heart of the product — lateral reading means seeing the
+same event across many outlets.
+
+```
+read all articles ─► embed ─► similarity ─► cluster ─► score ─► drop weak ─► write mapping
+```
+
+- Each article's text (title + summary + perex) is embedded with a language
+  model (`bge-m3`), and similar articles are clustered together.
+- Each article gets a confidence score; weakly-connected ones are dropped.
+- Output is a plain `article_id → cluster_id` mapping in the `article_clusters`
+  table. Cluster ids are **rebuilt from scratch each run** — they are not stable
+  across runs.
+- All the clustering internals (model, thresholds, scoring) are hidden inside
+  grouping. The rest of the app only ever sees the mapping.
+
+Note: the model (`bge-m3`) is heavy. It is imported lazily, so importing
+grouping is cheap — the model loads only when clustering actually runs.
+
+Files: `grouping/clusterer.py` (the engine), `grouping/config.py` (model +
+thresholds), `grouping/runner.py` (`run()`).
+
+## Presentation
+
+Turns clusters into ranked, display-ready **story cards**.
+
+```
+read mapping + articles ─► aggregate to clusters ─► keep >=2 media
+─► rank ─► take top N ─► build cards ─► write story_cards
+```
+
+- Keeps only clusters covered by **2+ outlets** (real lateral reading — this
+  also drops the single-outlet clusters grouping produced).
+- Ranks by size + media count + freshness, keeps the top N (default 15).
+- Each card is **self-contained**: title, sources (outlet + title + url), image,
+  and counts are all baked in, so the web layer just renders — no joins.
+- Titles: v1 uses keywords extracted from the articles. An LLM (title + summary
+  bullets) slots in later behind the `Enricher` interface without touching the
+  rest of presentation — the keyword title is then the fallback.
+
+Files: `presentation/ranking.py` (aggregate + rank), `presentation/enrichment.py`
+(`Enricher` interface + keyword titles), `presentation/cards.py` (assemble
+cards), `presentation/runner.py` (`run()`).
