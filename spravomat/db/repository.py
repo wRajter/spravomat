@@ -12,7 +12,7 @@ import logging
 from psycopg.types.json import Jsonb
 
 from spravomat.db.connection import connection
-from spravomat.shared.models import Article, StoredArticle
+from spravomat.shared.models import Article, StoredArticle, StoryCard
 
 logger = logging.getLogger(__name__)
 
@@ -165,4 +165,77 @@ def replace_clusters(mapping: dict[int, int]) -> dict:
         return {"success": True, "message": message, "data": len(rows)}
     except Exception as e:
         logger.error(f"❌ replace_clusters failed: {e}")
+        return {"success": False, "message": str(e), "data": None}
+
+
+def get_cluster_mapping() -> dict:
+    """
+    Read the current article -> cluster mapping.
+
+    Used by presentation to aggregate articles into clusters.
+
+    Returns:
+        Standard dict; data is {article_id: cluster_id}.
+    """
+    try:
+        with connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT article_id, cluster_id FROM article_clusters")
+                mapping = {row[0]: row[1] for row in cur.fetchall()}
+        return {
+            "success": True,
+            "message": f"Read {len(mapping)} cluster assignments",
+            "data": mapping,
+        }
+    except Exception as e:
+        logger.error(f"❌ get_cluster_mapping failed: {e}")
+        return {"success": False, "message": str(e), "data": None}
+
+
+def replace_story_cards(cards: list[StoryCard]) -> dict:
+    """
+    Replace the entire set of story cards with a new run.
+
+    Clears the previous run's cards and inserts the new ones in a single
+    transaction, so the snapshot is atomic (whole replacement or nothing).
+
+    Args:
+        cards: The finished, display-ready story cards to store.
+
+    Returns:
+        Standard dict; data is the number of cards written.
+    """
+    rows = [
+        (
+            c.cluster_id,
+            c.title,
+            Jsonb(c.bullets),
+            Jsonb(c.sources),
+            c.image_url,
+            c.media_count,
+            c.article_count,
+            c.newest_at,
+            c.rank_score,
+        )
+        for c in cards
+    ]
+    try:
+        with connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM story_cards")
+                if rows:
+                    cur.executemany(
+                        """
+                        INSERT INTO story_cards
+                            (cluster_id, title, bullets, sources, image_url,
+                             media_count, article_count, newest_at, rank_score)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """,
+                        rows,
+                    )
+        message = f"Replaced story cards with {len(rows)} cards"
+        logger.info(f"🏁 {message}")
+        return {"success": True, "message": message, "data": len(rows)}
+    except Exception as e:
+        logger.error(f"❌ replace_story_cards failed: {e}")
         return {"success": False, "message": str(e), "data": None}

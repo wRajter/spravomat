@@ -38,6 +38,19 @@ CREATE TABLE IF NOT EXISTS article_clusters (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_article_clusters_cluster ON article_clusters (cluster_id);
+
+CREATE TABLE IF NOT EXISTS story_cards (
+    cluster_id    INTEGER     PRIMARY KEY,
+    title         TEXT        NOT NULL,
+    bullets       JSONB       NOT NULL DEFAULT '[]'::jsonb,
+    sources       JSONB       NOT NULL DEFAULT '[]'::jsonb,
+    image_url     TEXT,
+    media_count   INTEGER     NOT NULL,
+    article_count INTEGER     NOT NULL,
+    newest_at     TIMESTAMPTZ,
+    rank_score    INTEGER     NOT NULL,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 """
 
 
