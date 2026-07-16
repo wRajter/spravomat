@@ -46,3 +46,39 @@ class Article:
     perex: str | None
     image_url: str | None
     attributes: dict = field(default_factory=dict)
+
+
+@dataclass
+class StoredArticle:
+    """
+    A news article as read back from the database — a full row.
+
+    The read counterpart of `Article`: it includes the database-assigned fields
+    (`article_id`, `fetched_at`) that `Article` omits. Returned by db read
+    functions and consumed by downstream components (grouping, presentation).
+
+    Attributes:
+        article_id: Database primary key; the join key across the pipeline.
+        title: Article headline.
+        url: Canonical article URL (unique).
+        medium: Canonical outlet key (e.g. "sme").
+        category: Section/category label, or None.
+        published_at: When the article was published (source's time), or None.
+        fetched_at: When the row was stored (database clock).
+        summary: Short summary from the RSS feed, or None.
+        perex: Scraped lead paragraph, or None.
+        image_url: Lead image URL, or None.
+        attributes: Free JSONB bag for optional/future fields.
+    """
+
+    article_id: int
+    title: str
+    url: str
+    medium: str
+    category: str | None
+    published_at: datetime | None
+    fetched_at: datetime
+    summary: str | None
+    perex: str | None
+    image_url: str | None
+    attributes: dict = field(default_factory=dict)
