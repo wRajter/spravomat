@@ -82,3 +82,35 @@ class StoredArticle:
     perex: str | None
     image_url: str | None
     attributes: dict = field(default_factory=dict)
+
+
+@dataclass
+class StoryCard:
+    """
+    A ranked, display-ready story, produced by presentation and rendered by web.
+
+    Self-contained: everything the page needs is baked in here (sources, image,
+    counts), so the web layer reads only story cards and performs no joins.
+
+    Attributes:
+        cluster_id: The (ephemeral, per-batch) cluster this card represents.
+        title: Story title. Keyword-derived in v1; LLM-generated once a provider
+            is added.
+        bullets: Short summary bullets. Empty in v1; LLM-generated later.
+        sources: One entry per article, as {"medium", "title", "url"} dicts.
+        image_url: Lead image for the story, or None.
+        media_count: Number of distinct outlets covering the story.
+        article_count: Number of articles in the story.
+        newest_at: Publication time of the newest article, or None.
+        rank_score: Score used to order cards (kept for display/debugging).
+    """
+
+    cluster_id: int
+    title: str
+    bullets: list[str]
+    sources: list[dict]
+    image_url: str | None
+    media_count: int
+    article_count: int
+    newest_at: datetime | None
+    rank_score: int
