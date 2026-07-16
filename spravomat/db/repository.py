@@ -12,9 +12,15 @@ import logging
 from psycopg.types.json import Jsonb
 
 from spravomat.db.connection import connection
-from spravomat.shared.models import Article
+from spravomat.shared.models import Article, StoredArticle
 
 logger = logging.getLogger(__name__)
+
+# Column order for reading full article rows into StoredArticle.
+_ARTICLE_COLUMNS = (
+    "article_id, title, url, medium, category, published_at, "
+    "fetched_at, summary, perex, image_url, attributes"
+)
 
 
 def get_existing_urls(urls: list[str]) -> dict:
@@ -103,4 +109,60 @@ def save_articles(articles: list[Article]) -> dict:
         return {"success": True, "message": message, "data": inserted}
     except Exception as e:
         logger.error(f"❌ save_articles failed: {e}")
+        return {"success": False, "message": str(e), "data": None}
+
+
+def get_all_articles() -> dict:
+    """
+    Read every stored article as a full row.
+
+    Used by grouping, which clusters over all articles currently in the database
+    (retention bounds the set upstream).
+
+    Returns:
+        Standard dict; data is a list[StoredArticle].
+    """
+    try:
+        with connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(f"SELECT {_ARTICLE_COLUMNS} FROM articles")
+                articles = [StoredArticle(*row) for row in cur.fetchall()]
+        return {
+            "success": True,
+            "message": f"Read {len(articles)} articles",
+            "data": articles,
+        }
+    except Exception as e:
+        logger.error(f"❌ get_all_articles failed: {e}")
+        return {"success": False, "message": str(e), "data": None}
+
+
+def replace_clusters(mapping: dict[int, int]) -> dict:
+    """
+    Replace the entire article -> cluster mapping with a new batch.
+
+    Clears the previous batch and inserts the new one in a single transaction,
+    so the snapshot is atomic (whole replacement or nothing).
+
+    Args:
+        mapping: {article_id: cluster_id} for articles that passed clustering.
+
+    Returns:
+        Standard dict; data is the number of mapping rows written.
+    """
+    rows = list(mapping.items())
+    try:
+        with connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM article_clusters")
+                if rows:
+                    cur.executemany(
+                        "INSERT INTO article_clusters (article_id, cluster_id) VALUES (%s, %s)",
+                        rows,
+                    )
+        message = f"Replaced cluster mapping with {len(rows)} rows"
+        logger.info(f"🏁 {message}")
+        return {"success": True, "message": message, "data": len(rows)}
+    except Exception as e:
+        logger.error(f"❌ replace_clusters failed: {e}")
         return {"success": False, "message": str(e), "data": None}

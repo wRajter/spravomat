@@ -31,6 +31,13 @@ CREATE TABLE IF NOT EXISTS articles (
     attributes   JSONB       NOT NULL DEFAULT '{}'::jsonb
 );
 CREATE INDEX IF NOT EXISTS idx_articles_published_at ON articles (published_at);
+
+CREATE TABLE IF NOT EXISTS article_clusters (
+    article_id BIGINT      PRIMARY KEY REFERENCES articles(article_id) ON DELETE CASCADE,
+    cluster_id INTEGER     NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_article_clusters_cluster ON article_clusters (cluster_id);
 """
 
 
