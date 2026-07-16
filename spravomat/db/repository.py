@@ -239,3 +239,35 @@ def replace_story_cards(cards: list[StoryCard]) -> dict:
     except Exception as e:
         logger.error(f"❌ replace_story_cards failed: {e}")
         return {"success": False, "message": str(e), "data": None}
+
+
+def get_story_cards() -> dict:
+    """
+    Read all story cards, highest-ranked first.
+
+    Used by the web layer to render the page. Cards are self-contained, so no
+    joins are needed. JSONB `bullets`/`sources` come back as Python list/dict.
+
+    Returns:
+        Standard dict; data is a list[StoryCard] ordered by rank_score desc.
+    """
+    try:
+        with connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT cluster_id, title, bullets, sources, image_url,
+                           media_count, article_count, newest_at, rank_score
+                    FROM story_cards
+                    ORDER BY rank_score DESC
+                    """
+                )
+                cards = [StoryCard(*row) for row in cur.fetchall()]
+        return {
+            "success": True,
+            "message": f"Read {len(cards)} story cards",
+            "data": cards,
+        }
+    except Exception as e:
+        logger.error(f"❌ get_story_cards failed: {e}")
+        return {"success": False, "message": str(e), "data": None}

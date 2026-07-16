@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if not cards %}
+<p class="empty-state">Zatiaľ žiadne správy.</p>
+{% else %}
+{% for card in cards %}
+<div class="cluster-card">
+    <h2 class="cluster-title">{{ card.title }}</h2>
+
+    {% if card.bullets %}
+    <ul class="cluster-bullets">
+        {% for bullet in card.bullets %}
+        <li>{{ bullet }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="cluster-content">
+        <div class="cluster-articles">
+            {% for source in card.sources %}
+            <div class="cluster-article">
+                <span class="article-medium medium-{{ source.medium }}">{{ source.medium | medium_label }}</span>
+                <a href="{{ source.url }}" target="_blank" rel="noopener">{{ source.title }}</a>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if card.image_url %}
+        <div class="cluster-image">
+            <img src="{{ card.image_url }}" alt="{{ card.title }}">
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="cluster-meta">
+        <span>{{ card.media_count }} médiá</span>
+        <span>{{ card.article_count }} článkov</span>
+        <span>{{ card.newest_at | time_ago }}</span>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}
