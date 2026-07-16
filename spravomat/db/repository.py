@@ -241,6 +241,36 @@ def replace_story_cards(cards: list[StoryCard]) -> dict:
         return {"success": False, "message": str(e), "data": None}
 
 
+def delete_articles_older_than(days: int) -> dict:
+    """
+    Delete articles whose `fetched_at` is older than `days` days.
+
+    Used by the retention step. `article_clusters` rows are removed automatically
+    via ON DELETE CASCADE. Retention is keyed on `fetched_at` (NOT NULL) so every
+    article ages out cleanly, regardless of the nullable `published_at`.
+
+    Args:
+        days: Maximum age in days; older articles are deleted.
+
+    Returns:
+        Standard dict; data is the number of articles deleted.
+    """
+    try:
+        with connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM articles WHERE fetched_at < now() - make_interval(days => %s)",
+                    (days,),
+                )
+                deleted = cur.rowcount
+        message = f"Deleted {deleted} articles older than {days} days"
+        logger.info(f"🏁 {message}")
+        return {"success": True, "message": message, "data": deleted}
+    except Exception as e:
+        logger.error(f"❌ delete_articles_older_than failed: {e}")
+        return {"success": False, "message": str(e), "data": None}
+
+
 def get_story_cards() -> dict:
     """
     Read all story cards, highest-ranked first.
