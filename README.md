@@ -23,11 +23,19 @@ cp .env.example .env   # then fill in values
 ## Run
 
 ```bash
-flask --app spravomat.web run     # web app
 python -m spravomat.db.migrations # create/update the database schema
 python -m spravomat.acquisition   # 1. fetch + store articles (all sources)
 python -m spravomat.grouping      # 2. cluster articles into stories
 python -m spravomat.presentation  # 3. rank stories into display-ready cards
+flask --app spravomat.web run     # 4. serve the page at http://127.0.0.1:5000
+```
+
+In production the pipeline steps are run on a schedule by orchestration, not
+by hand (see [Orchestration](#orchestration)):
+
+```bash
+python -m spravomat.orchestration.collect  # hourly: acquisition + retention
+python -m spravomat.orchestration.process  # 3x/day: grouping + presentation
 ```
 
 ## The pipeline
@@ -188,3 +196,49 @@ read mapping + articles ─► aggregate to clusters ─► keep >=2 media
 Files: `presentation/ranking.py` (aggregate + rank), `presentation/enrichment.py`
 (`Enricher` interface + keyword titles), `presentation/cards.py` (assemble
 cards), `presentation/runner.py` (`run()`).
+
+## Web
+
+The dumb-render layer: reads the finished story cards and renders one HTML page.
+No business logic, no joins, no data decisions — everything is already baked into
+the cards by presentation.
+
+- ONE route (`/`) → `get_story_cards()` → render. Nothing else is read.
+- The **only** thing web computes is relative time (`pred 3 h`) from each card's
+  timestamp, in Bratislava time — presentation relative to the moment of viewing.
+- Server-rendered Flask + Jinja, no JS framework. Flask application factory
+  (`create_app()`), so `gunicorn "spravomat.web:create_app()"` serves it on Heroku.
+
+Run it locally with `flask --app spravomat.web run` and open
+http://127.0.0.1:5000.
+
+Files: `web/__init__.py` (`create_app()` factory), `web/routes/` (the `/` route),
+`web/filters.py` (relative-time + outlet-label Jinja filters), `web/templates/`
+(base + home + navbar + footer), `web/static/css/main.css`.
+
+## Orchestration
+
+Runs the pipeline steps in order, on a schedule. It adds no new logic — it just
+calls the components' `run()` functions as black boxes, in order, stopping at the
+first failure (fail-fast). Split into two runs by how often they need to happen:
+
+```
+collect  (hourly)   →  acquisition.run()  →  retention (delete > 3 days old)
+process  (3x/day)   →  grouping.run()     →  presentation.run()
+```
+
+- **Collection is frequent** because RSS feeds roll fast — miss a window and
+  articles are gone. **Processing is not** — clusters/cards only need refreshing
+  a few times a day (06:00 / 12:00 / 18:00 UTC; night off).
+- **Retention** deletes articles older than 3 days (by `fetched_at`), keeping the
+  data fresh and bounding how much grouping has to cluster. `ON DELETE CASCADE`
+  cleans up the cluster rows automatically.
+- Thanks to dedup-before-enrich, steady-state `collect` is fast (only new
+  articles get scraped) — e.g. 581 fetched but only ~25 new → ~40s.
+
+Scheduling on Heroku uses the **Heroku Scheduler** add-on as a dumb trigger: one
+hourly job for `collect`, and three daily jobs (06/12/18 UTC) for `process` —
+each just runs the command; all the order/fail-fast logic lives in the scripts.
+
+Files: `orchestration/__init__.py` (`run_steps` — the shared fail-fast helper),
+`orchestration/collect.py` and `orchestration/process.py` (the two entry points).
