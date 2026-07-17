@@ -8,22 +8,24 @@
 <div class="cluster-card">
     <h2 class="cluster-title">{{ card.title }}</h2>
 
-    {% if card.bullets %}
-    <ul class="cluster-bullets">
-        {% for bullet in card.bullets %}
-        <li>{{ bullet }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
+    <div class="cluster-body">
+        <div class="cluster-main">
+            {% if card.bullets %}
+            <ul class="cluster-bullets">
+                {% for bullet in card.bullets %}
+                <li>{{ bullet }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
 
-    <div class="cluster-content">
-        <div class="cluster-articles">
-            {% for source in card.sources %}
-            <div class="cluster-article">
-                <span class="article-medium medium-{{ source.medium }}">{{ source.medium | medium_label }}</span>
-                <a href="{{ source.url }}" target="_blank" rel="noopener">{{ source.title }}</a>
+            <div class="cluster-articles">
+                {% for source in card.sources %}
+                <div class="cluster-article">
+                    <span class="article-medium medium-{{ source.medium }}">{{ source.medium | medium_label }}</span>
+                    <a href="{{ source.url }}" target="_blank" rel="noopener">{{ source.title }}</a>
+                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
 
         {% if card.image_url %}
