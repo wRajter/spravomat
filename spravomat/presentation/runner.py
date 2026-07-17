@@ -13,7 +13,7 @@ import logging
 from spravomat.db import repository
 from spravomat.presentation import config
 from spravomat.presentation.cards import build_cards
-from spravomat.presentation.enrichment import KeywordEnricher
+from spravomat.presentation.enrichment import get_enricher
 from spravomat.presentation.ranking import ClusterRanker
 
 logger = logging.getLogger(__name__)
@@ -40,8 +40,8 @@ def run() -> dict:
     ranked = ClusterRanker().rank(mapping_result["data"], articles_result["data"])
     top = ranked[: config.TOP_N]
 
-    # 3. Build self-contained cards (keyword titles in v1; LLM later).
-    cards = build_cards(top, KeywordEnricher())
+    # 3. Build self-contained cards (Gemini enrichment, keyword fallback).
+    cards = build_cards(top, get_enricher())
 
     # 4. Write, replacing the previous run's cards.
     write_result = repository.replace_story_cards(cards)

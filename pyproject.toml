@@ -20,9 +20,10 @@ dependencies = [
     "psycopg[binary]>=3.1",    # Postgres (psycopg 3)
     # config
     "python-dotenv>=1.0",
-    # LLM enrichment — provider PARKED, uncomment per choice:
+    # presentation — LLM enrichment (Gemini chosen 2026-07-17)
+    "google-genai>=0.3",
+    # LLM enrichment — OpenAI PARKED (middle fallback tier, add only if needed):
     # "openai>=1.30",
-    # "google-genai>=0.3",
 ]
 
 [project.optional-dependencies]

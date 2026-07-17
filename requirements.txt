@@ -16,5 +16,8 @@ pandas>=2.2
 # db
 psycopg[binary]>=3.1
 
+# presentation — LLM enrichment (Gemini)
+google-genai>=0.3
+
 # config
 python-dotenv>=1.0

@@ -189,9 +189,21 @@ read mapping + articles ─► aggregate to clusters ─► keep >=2 media
 - Ranks by size + media count + freshness, keeps the top N (default 15).
 - Each card is **self-contained**: title, sources (outlet + title + url), image,
   and counts are all baked in, so the web layer just renders — no joins.
-- Titles: v1 uses keywords extracted from the articles. An LLM (title + summary
-  bullets) slots in later behind the `Enricher` interface without touching the
-  rest of presentation — the keyword title is then the fallback.
+- **Enrichment** (title + bullets) sits behind a swappable `Enricher` interface:
+  - Default: **Gemini** reads each story's articles (title + summary + perex) and
+    writes a Slovak title plus bullets, drawing concrete facts from the text and
+    nothing else (strictly no outside knowledge, so bullets stay verifiable
+    against the linked sources).
+  - Fallback: a keyword title (from the articles) with no bullets — used per card
+    if the LLM call fails, and for the whole run if `GEMINI_API_KEY` is unset. The
+    app always works without an LLM.
+  - No cache: enrichment is recomputed each run, so titles/bullets may vary
+    between runs (accepted for now).
+
+Files: `presentation/ranking.py` (aggregate + rank), `presentation/enrichment.py`
+(`Enricher` interface, `GeminiEnricher`, keyword fallback, `get_enricher()`),
+`presentation/prompts.py` (the Slovak prompt), `presentation/cards.py` (assemble
+cards), `presentation/config.py` (knobs), `presentation/runner.py` (`run()`).
 
 Files: `presentation/ranking.py` (aggregate + rank), `presentation/enrichment.py`
 (`Enricher` interface + keyword titles), `presentation/cards.py` (assemble
