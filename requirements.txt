@@ -1,23 +1,8 @@
-# web
+# requirements.txt — WEB image only (the read-only Flask frontend).
+# Heavy batch/ML deps live in requirements-batch.txt so this image stays small
+# and never pulls torch. Web reads story_cards from the DB and renders them.
+
 flask>=3.0
 gunicorn>=21.0
-
-# data acquisition
-feedparser>=6.0
-beautifulsoup4>=4.12
-requests>=2.31
-
-# grouping (clustering)
-sentence-transformers>=2.7
-scikit-learn>=1.4
-numpy>=1.26
-pandas>=2.2
-
-# db
 psycopg[binary]>=3.1
-
-# presentation — LLM enrichment (Gemini)
-google-genai>=0.3
-
-# config
 python-dotenv>=1.0

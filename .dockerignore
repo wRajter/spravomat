@@ -1,0 +1,21 @@
+# Keep build context lean — only requirements*.txt and spravomat/ are needed.
+
+.git
+.gitignore
+.venv
+venv
+__pycache__
+*.pyc
+.env
+.env.*
+!.env.example
+
+# Not needed at runtime
+tests
+notebooks
+plans
+scratchpad
+*.md
+Dockerfile.*
+docker-compose.yml
+Caddyfile

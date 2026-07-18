@@ -1,0 +1,28 @@
+# Dockerfile.batch — heavy pipeline image (CPU torch + bge-m3 baked in).
+# Runs one command per invocation, then exits (see docker-compose.yml `batch`).
+
+FROM python:3.13-slim
+
+WORKDIR /app
+ENV PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1
+
+# 1. CPU-only torch first, from PyTorch's CPU wheel index. Installing it up front
+#    means sentence-transformers (next step) reuses it instead of pulling the
+#    default CUDA build (which is huge and pointless on a GPU-less box).
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch
+
+# 2. The rest of the batch deps (torch is already satisfied).
+COPY requirements-batch.txt .
+RUN pip install --no-cache-dir -r requirements-batch.txt
+
+# 3. Bake the bge-m3 weights into the image so scheduled runs never download
+#    ~2 GB at runtime — the model is already in the HF cache.
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-m3')"
+
+# 4. App code last, so editing code doesn't invalidate the heavy layers above.
+COPY spravomat/ ./spravomat/
+
+# No CMD: invoked with an explicit command, always with --rm, e.g.
+#   docker compose run --rm batch python -m spravomat.orchestration.collect
+#   docker compose run --rm batch python -m spravomat.orchestration.process
