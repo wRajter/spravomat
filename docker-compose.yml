@@ -1,0 +1,66 @@
+# docker-compose.yml — Spravomat on one box.
+# Always up: db, web, caddy. On demand: batch (run-only, --rm).
+# Compose reads .env in this directory for the ${...} values below.
+
+services:
+  db:
+    image: postgres:17          # pinned major — a tag bump won't auto-migrate the volume
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # No `ports:` — the DB is reachable only on the compose network, never from
+    # the host or internet. Use an SSH tunnel for DBeaver access.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+    # No host `ports:` — only caddy (same network) reaches web:8000.
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"                # unused until a domain is added; harmless to expose
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+  batch:
+    build:
+      context: .
+      dockerfile: Dockerfile.batch
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+    # Run-only: no long-running process. `profiles` keeps it from starting on
+    # `docker compose up`; `docker compose run --rm batch ...` still works.
+    #   docker compose run --rm batch python -m spravomat.orchestration.process
+    profiles: ["batch"]
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

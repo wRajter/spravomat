@@ -1,0 +1,10 @@
+# Caddyfile — interim HTTP-only reverse proxy (no domain yet).
+#
+# Bare IP over HTTP on purpose: Let's Encrypt won't issue certs for an IP, so we
+# do NOT want ACME here. To go live with a domain later, replace the ":80" line
+# with "your.domain.tld" and Caddy obtains + renews HTTPS automatically — no other
+# change needed.
+
+:80 {
+	reverse_proxy web:8000
+}

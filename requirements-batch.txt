@@ -1,0 +1,26 @@
+# requirements-batch.txt — BATCH image only (the heavy pipeline).
+# acquisition + grouping + presentation deps.
+#
+# NOTE: torch is intentionally NOT listed here. It is installed separately in
+# Dockerfile.batch from the CPU-only wheel index. Listing it here would let pip
+# pull the default (CUDA) build — huge and useless on a GPU-less box.
+
+# data acquisition
+feedparser>=6.0
+beautifulsoup4>=4.12
+requests>=2.31
+
+# grouping (clustering)
+sentence-transformers>=2.7
+scikit-learn>=1.4
+numpy>=1.26
+pandas>=2.2
+
+# db
+psycopg[binary]>=3.1
+
+# presentation — LLM enrichment (Gemini)
+google-genai>=0.3
+
+# config
+python-dotenv>=1.0

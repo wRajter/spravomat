@@ -1,0 +1,20 @@
+# Dockerfile.web — read-only Flask frontend. Small image, NO torch.
+
+FROM python:3.13-slim
+
+WORKDIR /app
+ENV PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1
+
+# Install deps first so this layer is cached until requirements.txt changes.
+# psycopg[binary] bundles its own libpq, so no system packages are needed.
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# App code (templates + static live inside the spravomat package).
+COPY spravomat/ ./spravomat/
+
+# Gunicorn serves the Flask app factory. 2 workers to fit the shared RAM budget.
+# Not published to the host — only caddy (same compose network) reaches it.
+EXPOSE 8000
+CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:8000", "spravomat.web:create_app()"]
