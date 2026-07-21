@@ -1,7 +1,8 @@
 # spravomat/orchestration/collect.py
 
 """
-Run 1 — collection. Frequent (hourly on Heroku Scheduler).
+Run 1 — collection. Frequent (hourly via host cron on the VPS), as
+`docker compose run --rm batch python -m spravomat.orchestration.collect`.
 
     acquisition.run()  ->  retention (delete articles older than RETENTION_DAYS)
 

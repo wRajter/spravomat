@@ -27,7 +27,9 @@ cover each story. Batch pipeline + read-only web frontend.
 3. `presentation` — rank stories, LLM-enrich top ones into story cards.
 4. `web` — Flask app. Dumb rendering only, no business logic.
 5. `db` — database access layer (repository functions, schema, migrations).
-6. `orchestration` — runs the pipeline steps in order (fail-fast).
+6. `orchestration` — runs the pipeline steps in order (fail-fast). Two runs:
+   `collect` (acquisition → retention; frequent) and `process` (grouping →
+   presentation; a few times a day).
 Plus `shared` — config, logging (cross-cutting).
 
 ## Contracts (data flowing between components)
@@ -50,15 +52,19 @@ Plus `shared` — config, logging (cross-cutting).
 - Database: PostgreSQL. Access only via `db` repository functions, never raw SQL
   elsewhere.
 - Schema defined in code (migrations), so local and prod DBs stay identical.
-- Hosting: Heroku (likely). Keep the core platform-neutral — platform-specific
-  things (connection string, scheduler) live at the edge in `shared` config.
-- Local dev uses a local database; production uses Heroku's. Switch only via the
-  DATABASE_URL environment variable, never in code.
+- LLM provider: Gemini (`google-genai`), used for batch enrichment. OpenAI /
+  Anthropic keys appear only in throwaway comparison tests, not the pipeline.
+- Hosting: Docker Compose on a Hetzner VPS (`db`, `web`, `caddy` always up;
+  `batch` run-only). Caddy is the HTTPS edge. Keep the core platform-neutral —
+  platform-specific things (connection string, scheduler) live at the edge in
+  `shared` config. See `plans/deploy.md`.
+- Local dev uses a local database; production uses the `db` Postgres container
+  on the VPS. Switch only via the DATABASE_URL environment variable, never in
+  code. For DBeaver access to the prod DB, see `plans/db.md`.
 
 ## Parked decisions (do NOT implement — open until decided)
 - batch vs online clustering (waits on measurement)
 - enrichment cache strategy
-- LLM provider (OpenAI vs Gemini)
 - alerting form
 - delivery interactivity scope
 

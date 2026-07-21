@@ -126,3 +126,29 @@ spravomat/shared/
 - Local Postgres: is a local DB already running / created
   (`spravomat_dev` per `.env.example`), or do we set that up as part of testing
   the migration + repository step?
+
+## Connecting to the production DB from DBeaver (Mac)
+The prod DB runs in Docker on the VPS. It is NOT exposed to the internet — the
+`db` service binds its port to `127.0.0.1:5432` (host-only). Reach it from
+DBeaver on your Mac through an SSH tunnel.
+
+Server side (already done, one-time):
+- `docker-compose.yml` `db` service has:
+  ```yaml
+  ports:
+    - "127.0.0.1:5432:5432"
+  ```
+- Apply with `docker compose up -d db`; verify `docker compose ps` shows
+  `127.0.0.1:5432->5432/tcp`.
+
+DBeaver connection (New PostgreSQL connection):
+- **SSH tab** → Use SSH Tunnel:
+  - Host/IP: VPS IP (e.g. `178.105.1.59`), Port: `22`
+  - User: `lubomir`
+  - Auth: Password (SSH-key auth failed with "Exhausted available
+    authentication methods" — key on the server didn't match; password works).
+- **Main tab** (as seen from *inside* the server, via the tunnel):
+  - Host: `localhost`, Port: `5432`
+  - Database / Username / Password: the `POSTGRES_*` values from server `.env`.
+- Test Connection → Finish. Reconnecting later just reopens the tunnel
+  automatically.

@@ -4,7 +4,7 @@
 Schema definition and idempotent initialization.
 
 For v1 the schema is a single table created with CREATE ... IF NOT EXISTS and
-re-run on each release (Heroku `release` phase). No versioned migration history
+re-run as an idempotent one-off compose command. No versioned migration history
 yet — that is added later, when the first real schema change makes the
 idempotent approach awkward.
 """

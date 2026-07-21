@@ -1,7 +1,8 @@
 # spravomat/orchestration/process.py
 
 """
-Run 2 — processing. A few times a day on Heroku Scheduler (06/12/18 UTC).
+Run 2 — processing. A few times a day via host cron on the VPS (e.g. 06/12/18
+UTC), as `docker compose run --rm batch python -m spravomat.orchestration.process`.
 
     grouping.run()  ->  presentation.run()
 

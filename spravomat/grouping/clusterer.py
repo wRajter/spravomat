@@ -39,7 +39,8 @@ class Clusterer:
         # Imported lazily (not at module top) so that importing grouping —
         # e.g. orchestration or the web app pulling in grouping.run — does NOT
         # drag torch/sentence-transformers into memory. It loads only when a
-        # Clusterer is actually constructed. Keeps the core light (Heroku memory).
+        # Clusterer is actually constructed. Keeps the core light (the VPS has
+        # limited RAM; batch peaks near the box's ceiling).
         from sentence_transformers import SentenceTransformer
 
         self.model = SentenceTransformer(model_name)

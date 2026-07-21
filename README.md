@@ -38,6 +38,13 @@ python -m spravomat.orchestration.collect  # hourly: acquisition + retention
 python -m spravomat.orchestration.process  # 3x/day: grouping + presentation
 ```
 
+## Deployment
+
+Runs on a single Hetzner VPS via Docker Compose: `db`, `web`, and `caddy` (the
+HTTPS edge) stay up; `batch` is run-only, invoked on a schedule by host cron.
+Full setup, memory notes, and the DBeaver access guide live in
+[`plans/deploy.md`](plans/deploy.md) and [`plans/db.md`](plans/db.md).
+
 ## The pipeline
 
 Four data components run in order, each reading the previous one's output from
@@ -205,10 +212,6 @@ Files: `presentation/ranking.py` (aggregate + rank), `presentation/enrichment.py
 `presentation/prompts.py` (the Slovak prompt), `presentation/cards.py` (assemble
 cards), `presentation/config.py` (knobs), `presentation/runner.py` (`run()`).
 
-Files: `presentation/ranking.py` (aggregate + rank), `presentation/enrichment.py`
-(`Enricher` interface + keyword titles), `presentation/cards.py` (assemble
-cards), `presentation/runner.py` (`run()`).
-
 ## Web
 
 The dumb-render layer: reads the finished story cards and renders one HTML page.
@@ -219,7 +222,8 @@ the cards by presentation.
 - The **only** thing web computes is relative time (`pred 3 h`) from each card's
   timestamp, in Bratislava time — presentation relative to the moment of viewing.
 - Server-rendered Flask + Jinja, no JS framework. Flask application factory
-  (`create_app()`), so `gunicorn "spravomat.web:create_app()"` serves it on Heroku.
+  (`create_app()`), so `gunicorn "spravomat.web:create_app()"` serves it in the
+  `web` container, with Caddy as the HTTPS edge in front.
 
 Run it locally with `flask --app spravomat.web run` and open
 http://127.0.0.1:5000.
@@ -248,9 +252,10 @@ process  (3x/day)   →  grouping.run()     →  presentation.run()
 - Thanks to dedup-before-enrich, steady-state `collect` is fast (only new
   articles get scraped) — e.g. 581 fetched but only ~25 new → ~40s.
 
-Scheduling on Heroku uses the **Heroku Scheduler** add-on as a dumb trigger: one
-hourly job for `collect`, and three daily jobs (06/12/18 UTC) for `process` —
-each just runs the command; all the order/fail-fast logic lives in the scripts.
+Scheduling uses **host cron** on the VPS as a dumb trigger: one hourly job for
+`collect`, and three daily jobs (06/12/18 UTC) for `process`. Each job just runs
+`docker compose run --rm batch python -m spravomat.orchestration.<collect|process>`;
+all the order/fail-fast logic lives in the scripts.
 
 Files: `orchestration/__init__.py` (`run_steps` — the shared fail-fast helper),
 `orchestration/collect.py` and `orchestration/process.py` (the two entry points).

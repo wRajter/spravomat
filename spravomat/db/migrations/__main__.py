@@ -1,7 +1,8 @@
 # spravomat/db/migrations/__main__.py
 
 """
-Entry point for `python -m spravomat.db.migrations` (Heroku `release` phase).
+Entry point for `python -m spravomat.db.migrations`. Run as a one-off compose
+command on the VPS: `docker compose run --rm batch python -m spravomat.db.migrations`.
 
 Applies the idempotent schema and exits non-zero on failure so a broken release
 is caught.
