@@ -5,6 +5,6 @@
 # with "your.domain.tld" and Caddy obtains + renews HTTPS automatically — no other
 # change needed.
 
-:80 {
-	reverse_proxy web:8000
+spravomat.sk, www.spravomat.sk {
+    reverse_proxy web:8000
 }
