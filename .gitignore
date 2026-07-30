@@ -26,5 +26,10 @@ models/
 *.log
 logs/
 
+# Database dumps — backups live outside the repo (~/backups/postgres);
+# this is insurance in case one is ever written in here by accident.
+backups/
+*.dump
+
 # OS
 .DS_Store
