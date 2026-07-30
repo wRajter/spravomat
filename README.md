@@ -253,9 +253,14 @@ process  (3x/day)   →  grouping.run()     →  presentation.run()
   articles get scraped) — e.g. 581 fetched but only ~25 new → ~40s.
 
 Scheduling uses **host cron** on the VPS as a dumb trigger: one hourly job for
-`collect`, and three daily jobs (06/12/18 UTC) for `process`. Each job just runs
-`docker compose run --rm batch python -m spravomat.orchestration.<collect|process>`;
+`collect` (at :30), and three daily jobs (05/11/19 UTC) for `process`. Each job
+just runs
+`docker compose run --rm batch python -m spravomat.orchestration.<collect|process>`
+under a shared `flock`, so collect and process can never overlap (RAM guard);
 all the order/fail-fast logic lives in the scripts.
+
+A fourth cron job takes a daily `pg_dump` at 03:10 UTC — see
+[`plans/backup.md`](plans/backup.md).
 
 Files: `orchestration/__init__.py` (`run_steps` — the shared fail-fast helper),
 `orchestration/collect.py` and `orchestration/process.py` (the two entry points).

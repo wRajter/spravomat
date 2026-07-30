@@ -56,7 +56,9 @@
 ## Not in this task (later)
 - Host cron for scheduled batch (3×/day) + collect (hourly) — after containers work.
 - Domain + DNS (A record → server IP) — Caddy then does HTTPS automatically.
-- DB backups (pg_dump + off-box copy), auto OS updates.
+- DB backups: local daily pg_dump DONE (`scripts/backup_db.sh`, `plans/backup.md`).
+  Off-box copy still open — the real remaining gap.
+- Auto OS updates.
 
 ## Parked
 - Coolify (skipped for now — bare Docker Compose is lighter; add later if wanted).
