@@ -10,13 +10,12 @@ Sequential fail-fast: if acquisition fails, retention is skipped (harmless — i
 runs next cycle). Entry point: `python -m spravomat.orchestration.collect`.
 """
 
-import logging
 import sys
 
 from spravomat import acquisition
 from spravomat.db import repository
 from spravomat.orchestration import run_steps
-from spravomat.shared import config
+from spravomat.shared.logging import setup_logging
 
 # Delete articles older than this many days (by fetched_at). The only
 # orchestration knob; kept here since it is used only in this run.
@@ -41,9 +40,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=config.LOG_LEVEL,
-        format="%(asctime)s %(levelname)s %(message)s",
-        datefmt="%H:%M:%S",
-    )
+    setup_logging()
     sys.exit(main())

@@ -8,16 +8,12 @@ Applies the idempotent schema and exits non-zero on failure so a broken release
 is caught.
 """
 
-import logging
 import sys
 
 from spravomat.db.migrations import init_schema
-from spravomat.shared import config
+from spravomat.shared.logging import setup_logging
 
-logging.basicConfig(
-    level=config.LOG_LEVEL,
-    format="%(asctime)s %(levelname)s %(message)s",
-)
+setup_logging()
 
 result = init_schema()
 sys.exit(0 if result["success"] else 1)
