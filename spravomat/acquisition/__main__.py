@@ -8,17 +8,12 @@ and exits non-zero if the run fails. Handy for manual/dev runs; orchestration
 calls acquisition.run() directly.
 """
 
-import logging
 import sys
 
 from spravomat.acquisition import run
-from spravomat.shared import config
+from spravomat.shared.logging import setup_logging
 
-logging.basicConfig(
-    level=config.LOG_LEVEL,
-    format="%(asctime)s %(levelname)s %(message)s",
-    datefmt="%H:%M:%S",
-)
+setup_logging()
 
 result = run()
 print(result)

@@ -11,12 +11,11 @@ receives already-bounded data (retention runs in collection). Entry point:
 `python -m spravomat.orchestration.process`.
 """
 
-import logging
 import sys
 
 from spravomat import grouping, presentation
 from spravomat.orchestration import run_steps
-from spravomat.shared import config
+from spravomat.shared.logging import setup_logging
 
 
 def main() -> int:
@@ -32,9 +31,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=config.LOG_LEVEL,
-        format="%(asctime)s %(levelname)s %(message)s",
-        datefmt="%H:%M:%S",
-    )
+    setup_logging()
     sys.exit(main())
