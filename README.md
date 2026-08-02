@@ -13,6 +13,29 @@ outlets, clusters them by story, and shows which outlets cover each story.
 - `spravomat/shared` — config, logging
 - `spravomat/web` — Flask web app
 
+## Architecture
+
+High-level view of how the pieces fit together. Host cron triggers the batch
+container, which runs the pipeline and reads/writes Postgres; the web edge reads
+from the same database; `shared` handles the cross-cutting logging + alerts.
+
+```mermaid
+flowchart TD
+    rss[RSS sources] --> acq
+    cron[cron scheduler] --> batch
+
+    subgraph batch [batch container · spravomat/orchestration]
+        acq[acquisition<br/>fetch + normalize] --> grp[grouping<br/>cluster into stories] --> pres[presentation<br/>rank + LLM enrich]
+    end
+
+    batch -->|read / write| db[(db · Postgres<br/>access layer + store)]
+    db -->|daily| backup[backup]
+    db -->|reads| web[web + caddy<br/>Flask · HTTPS]
+    web --> readers[readers]
+
+    shared[shared] --> logs[logs + alerts]
+```
+
 ## Setup
 
 ```bash
@@ -253,14 +276,35 @@ process  (3x/day)   →  grouping.run()     →  presentation.run()
   articles get scraped) — e.g. 581 fetched but only ~25 new → ~40s.
 
 Scheduling uses **host cron** on the VPS as a dumb trigger: one hourly job for
-`collect` (at :30), and three daily jobs (05/11/19 UTC) for `process`. Each job
-just runs
-`docker compose run --rm batch python -m spravomat.orchestration.<collect|process>`
-under a shared `flock`, so collect and process can never overlap (RAM guard);
-all the order/fail-fast logic lives in the scripts.
-
-A fourth cron job takes a daily `pg_dump` at 03:10 UTC — see
+`collect` (at :30) and three daily jobs (05/11/19 UTC) for `process`. Each cron
+job runs a small wrapper script (`scripts/collect.sh` / `scripts/process.sh`)
+that launches the batch container
+(`docker compose run --rm batch python -m spravomat.orchestration.<collect|process>`),
+saves that run's output to a per-run log file, and sends a Telegram alert if it
+fails. A fourth job (`scripts/backup_db.sh`, 03:10 UTC) takes the daily
+`pg_dump`. See [Logging & alerts](#logging--alerts) and
 [`plans/backup.md`](plans/backup.md).
 
 Files: `orchestration/__init__.py` (`run_steps` — the shared fail-fast helper),
 `orchestration/collect.py` and `orchestration/process.py` (the two entry points).
+
+## Logging & alerts
+
+Logging is set up in one place and every component uses it the same way; failed
+batch runs alert to Telegram so a problem isn't silent.
+
+- **One setup, stdout.** `shared/logging.py` (`setup_logging()`) configures all
+  logging: one format (with date + logger name so you see *where* a line came
+  from), everything to stdout, noisy libraries quieted. Entry points call it
+  once; library modules just use `logging.getLogger(__name__)`.
+- **Timed, fail-fast pipeline logs.** `run_steps` logs each step with its
+  duration and stops at the first failure; an unexpected crash is caught and
+  logged with its traceback instead of printing a bare stack trace.
+- **Per-run log files + alerts.** The batch container runs with `--rm`, so the
+  wrapper scripts (`scripts/collect.sh` / `scripts/process.sh`) save each run's
+  output to `~/spravomat-logs/` before the container is removed, and send a
+  Telegram alert on failure. The daily backup (`scripts/backup_db.sh`) alerts
+  the same way. All alerts go through one sender, `scripts/notify.sh`. Logs
+  older than 14 days are pruned.
+
+Full design notes: [`plans/logging.md`](plans/logging.md).

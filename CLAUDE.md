@@ -61,11 +61,13 @@ Plus `shared` — config, logging (cross-cutting).
 - Local dev uses a local database; production uses the `db` Postgres container
   on the VPS. Switch only via the DATABASE_URL environment variable, never in
   code. For DBeaver access to the prod DB, see `plans/db.md`.
+- Alerting: failed batch/backup runs send a Telegram alert (shell + `curl`, so
+  it works even when the app is broken). Logging is centralised in
+  `shared/logging.py`. See `plans/logging.md`.
 
 ## Parked decisions (do NOT implement — open until decided)
 - batch vs online clustering (waits on measurement)
 - enrichment cache strategy
-- alerting form
 - delivery interactivity scope
 
 ## Coding conventions
