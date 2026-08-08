@@ -25,3 +25,9 @@ def home():
     result = repository.get_story_cards()
     cards = result["data"] if result["success"] else []
     return render_template("home.html", cards=cards)
+
+
+@bp.route("/o-projekte")
+def about():
+    """Render the static 'O projekte' page."""
+    return render_template("about.html")

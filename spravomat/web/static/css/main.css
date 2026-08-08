@@ -254,6 +254,23 @@ a:hover {
   color: #666;
 }
 
+/* About page */
+.about {
+  max-width: 70rem;
+}
+
+.about h3 {
+  margin-top: 3rem;
+}
+
+.about a {
+  color: var(--color-secondary);
+}
+
+.about a:hover {
+  color: var(--color-hover_text);
+}
+
 /* Responsive */
 @media screen and (max-width: 768px) {
   /* Fix mobile horizontal overflow: the navbar's fixed 3rem gaps across four
