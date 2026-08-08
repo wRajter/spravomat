@@ -143,10 +143,9 @@ Server side (already done, one-time):
 
 DBeaver connection (New PostgreSQL connection):
 - **SSH tab** → Use SSH Tunnel:
-  - Host/IP: VPS IP (e.g. `178.105.1.59`), Port: `22`
-  - User: `lubomir`
-  - Auth: Password (SSH-key auth failed with "Exhausted available
-    authentication methods" — key on the server didn't match; password works).
+  - Host/IP: `<VPS_IP>`, Port: `22`
+  - User: `<your-ssh-user>`
+  - Auth: as configured on the server (key or password).
 - **Main tab** (as seen from *inside* the server, via the tunnel):
   - Host: `localhost`, Port: `5432`
   - Database / Username / Password: the `POSTGRES_*` values from server `.env`.
